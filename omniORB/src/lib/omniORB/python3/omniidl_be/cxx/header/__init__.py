@@ -238,6 +238,5 @@ def run(tree):
 
         stream.close()
         
-        print(header_filename)
         shutil.copy(header_filename, header_filename[:-3] + "_s.h")
         shutil.copy(header_filename, header_filename[:-3] + ".h")
