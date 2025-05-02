@@ -1,0 +1,129 @@
+omniORB HTTP Transport Example
+==============================
+
+This is a simple example of how to use the HTTP transport.
+
+Make sure that the HTTP and SSL transports are built for your platform. The
+HTTP transport is built only if the make variable OPEN_SSL_ROOT is defined
+and points to the root directory of the OpenSSL library.  If you are using
+the configure script, use the --with-openssl configuration option.
+
+You must link with both the HTTP and SSL transport libraries, as well as
+OpenSSL.
+
+A second example demonstrates use of the httpCrypto extension.
+
+
+What does this example do?
+==========================
+
+This is the same eg2 echo example as found in the examples/echo directory,
+modified to be able to use the HTTP transport.
+
+
+Server
+------
+
+eg2_impl is the server. You must give it suitable command line parameters to
+choose the transport scheme you would like to use, and set the transport
+rules to accept HTTP.
+
+For example, to support HTTPS:
+
+    eg2_impl -ORBserverTransportRule "* http" \
+             -ORBendPoint giop:http:https://:8443/call \
+             -ORBendPointPublish name
+
+That tells the server:
+
+  1. to accept incoming http transport requests only (not standard IIOP)
+  2. to accept incoming https calls on all network interfaces
+  3. to publish the host name in IORs, rather than an IP address
+
+It outputs an IOR. If you use catior to look at it, you will see
+something like this:
+
+$ catior IOR:010000000d00000049444c3a4563686f3a312e30000000000100000000000000960000000101020014000000736572766572312e6f6d6e696f72622e6e65740000000000040000006563686f0300000000000000080000000100000000545441010000001c00000001000000010001000100000001000105090101000100000009010100055454412e000000010000002600000068747470733a2f2f736572766572312e6f6d6e696f72622e6e65743a383434332f63616c6c00
+Type ID: "IDL:Echo:1.0"
+Profiles:
+1. IIOP 1.2 server1.omniorb.net 0 "echo"
+      TAG_ORB_TYPE omniORB (ATT\x00)
+      TAG_CODE_SETS char native code set:       ISO-8859-1
+                    char conversion code sets:  UTF-8
+                    wchar native code set:      UTF-16
+                    wchar conversion code sets: UTF-16
+
+      TAG_OMNIORB_HTTP_TRANS https://server1.omniorb.net:8443/call
+
+
+Alternative endPoint specifications include examples like:
+
+  - Specify a specific endpoint:
+
+      giop:http:https://server2.omniorb.net:8443/call
+
+  - Specify unencrypted http rather than https:
+
+      giop:http:http://:8080/call
+
+  - Specify WebSocket over https:
+
+      giop:http:wss://:8443/call
+
+
+
+Client
+------
+
+eg2_clt is the client. You must tell it to support connections with the HTTP
+transport, and provide the IOR or URL to connect to:
+
+
+    eg2_clt -ORBclientTransportRule "* http" IOR:0100000...
+
+
+Rather than providing an IOR, you can directly provide a URL to
+orb->string_to_object:
+
+    eg2_clt -ORBclientTransportRule "* http" \
+            https://server1.omniorb.net:8443/call#echo
+
+Note that the object key is included in the URL after a # character.
+eg2_impl activates the object with simple key "echo" in the omniINSPOA to
+enable this.
+
+
+
+HTTP Crypto Example
+===================
+
+eg2_crypto_impl and eg2_crypto_clt extend the example to also use the
+httpCrypto extension. This provides in-message encryption that ensures the
+traffic between client and server is end-to-end encrypted, even if the calls
+are passed through decrypting web proxies.
+
+The encryption scheme uses pre-shared public keys. Clients and servers must
+register with each other. The client must register the server using the
+server's URL. For simplicity, the example uses https://localhost:8443/call
+as the server URL, so the example only works when client and server are on
+the same host.
+
+Run them like this:
+
+    eg2_crypto_impl -ORBserverTransportRule "* http" \
+                    -ORBendPoint giop:http:https://localhost:8443/call
+
+
+    eg2_crypto_clt -ORBclientTransportRule "* http" \
+                   https://localhost:8443/call#echo
+
+
+In eg2_crypto_impl.cc, the echoString() implementation checks the identity
+of its client, outputting its address, its TLS certificate identity and its
+httpCrypto identity. If you run the non-encrypted eg2_clt as the client, you
+will see that the server does not receive client details. It could choose to
+reject the call by throwing an exception.
+
+In a real situation, it would often be better to perform these checks in a
+serverReceiveRequest interceptor, rather than in every operation
+implementation.
