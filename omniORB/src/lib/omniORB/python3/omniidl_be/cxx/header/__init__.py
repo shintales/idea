@@ -38,7 +38,7 @@ from omniidl_be.cxx.header import template
 from omniidl_be.cxx import config, output, ast, id
 
 import os.path
-
+import shutil
 
 def header(stream, filename):
     stream.out(template.header,
@@ -237,3 +237,7 @@ def run(tree):
         monolithic(stream, tree)
 
         stream.close()
+        
+        print(header_filename)
+        shutil.copy(header_filename, header_filename[:-3] + "_s.h")
+        shutil.copy(header_filename, header_filename[:-3] + ".h")
