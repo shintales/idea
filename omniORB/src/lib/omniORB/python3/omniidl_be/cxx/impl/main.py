@@ -28,6 +28,7 @@ from omniidl_be.cxx import ast, util, types, output, id
 from omniidl_be.cxx.impl import template
 
 import sys
+import shutil
 self = sys.modules[__name__]
 
 def init(stream, idl_filename, hh_filename):
@@ -96,6 +97,8 @@ def run(tree):
                allocate_objects = str(allocate),
                activate_objects = str(activate),
                output_references = str(reference))
+    shutil.copy(self.hh_filename, self.hh_filename[:-3] + "_s.h")
+    shutil.copy(self.hh_filename, self.hh_filename[:-3] + ".h")
 
 
 
